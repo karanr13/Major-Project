@@ -221,147 +221,107 @@ def generate_recommendations(features, fhs_score, risk_category):
 # =========================
 # UI
 # =========================
+# =========================
+# UI LAYER (FINAL VERSION)
+# =========================
 
-# =========================
-# UI (IMPROVED ONLY - NO LOGIC CHANGE)
-# =========================
+import matplotlib.pyplot as plt
+
+# ---------- STYLING ----------
+st.markdown("""
+<style>
+body {background-color: #f5f7fa;}
+.section {
+    background-color: white;
+    padding: 18px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    box-shadow: 0px 2px 6px rgba(0,0,0,0.05);
+}
+.title {color: #1f3c88; font-weight: 600;}
+.subtitle {color: #555; font-size: 14px;}
+</style>
+""", unsafe_allow_html=True)
 
 likert = list(likert_map.keys())
 
-# -------------------------
-# INTRO
-# -------------------------
+# ---------- INTRO ----------
 st.markdown("""
-## 📊 Financial Intelligence Assessment
+## Financial Intelligence Assessment
 
-This system evaluates your **financial health, behavioral tendencies, and risk exposure** using a combination of:
-- Financial scoring
-- Behavioral analysis
-- Machine learning
+This system evaluates your **financial health, behavioral tendencies, and risk exposure** using:
+
+- Structured financial scoring
+- Machine learning prediction
+- Behavioral insights
 - Regression-based risk modeling
 
-👉 Please answer honestly based on your typical behavior.
+Please answer honestly based on your real financial behavior.
 """)
 
-# -------------------------
-# SECTION 1
-# -------------------------
-st.markdown("""
-### 🏦 Financial Background
-
-This section helps us understand your **income capacity and financial obligations**, which directly impact your risk level.
-""")
+# ---------- SECTION 1 ----------
+st.markdown("### Financial Background")
 
 loan = st.selectbox(
-"Do you currently have an active loan obligation?",
+"Do you currently have an active loan?",
 ["Yes","No"],
-help="Loans increase fixed financial commitments and impact flexibility."
+help="Loans increase fixed obligations and affect financial flexibility."
 )
 
 income = st.selectbox(
-"Which of the following best describes your monthly income?",
+"Which option best describes your monthly income?",
 list(income_map.keys()),
 help="Income determines your financial capacity and stability."
 )
 
 if loan == "Yes":
     emi = st.selectbox(
-    "What proportion of your monthly income goes towards EMI payments?",
+    "What percentage of your income goes towards EMI payments?",
     list(emi_map.keys()),
-    help="Higher EMI reduces your ability to save and increases financial stress."
+    help="Higher EMI increases financial pressure and reduces savings ability."
     )
 else:
     emi = "Less than 20%"
 
-# -------------------------
-# SECTION 2
-# -------------------------
-st.markdown("""
-### 🧠 Financial Behavior
-
-This section evaluates **behavioral biases** that influence financial decisions.
-Please indicate how much you agree with the following statements:
-""")
+# ---------- SECTION 2 ----------
+st.markdown("### Behavioral Assessment")
 
 fomo = st.selectbox(
 "I feel pressure to act on financial opportunities so that I do not miss out.",
-likert,
-help="Measures fear of missing out (FOMO), which can lead to impulsive decisions."
+likert
 )
 
 social = st.selectbox(
-"My financial decisions are influenced by what others around me are doing.",
-likert,
-help="Captures social influence on financial behavior."
+"My financial decisions are influenced by people around me.",
+likert
 )
 
 optimism = st.selectbox(
 "I expect my income to increase significantly in the future.",
-likert,
-help="Measures optimism bias and reliance on future income."
-)
-
-# -------------------------
-# SECTION 3
-# -------------------------
-st.markdown("""
-### 📘 Financial Awareness
-
-This section assesses your **understanding of key financial concepts**, which is critical for sound decision-making.
-""")
-
-tracking = st.selectbox(
-"I actively track my expenses and financial activities.",
-likert,
-help="Tracking improves financial control and awareness."
-)
-
-interest = st.selectbox(
-"I understand how interest rates impact loans and savings.",
 likert
 )
 
-emi_awareness = st.selectbox(
-"I understand how EMI commitments affect my finances over time.",
-likert
-)
+# ---------- SECTION 3 ----------
+st.markdown("### Financial Awareness")
 
-debt = st.selectbox(
-"I have a clear understanding of my debt obligations.",
-likert
-)
+tracking = st.selectbox("I actively track my financial activities.", likert)
+interest = st.selectbox("I understand how interest rates affect finances.", likert)
+emi_awareness = st.selectbox("I understand the impact of EMI commitments.", likert)
+debt = st.selectbox("I understand my overall debt obligations.", likert)
 
-# -------------------------
-# SECTION 4
-# -------------------------
-st.markdown("""
-### 📈 Inflation & Spending Behavior
+# ---------- SECTION 4 ----------
+st.markdown("### Inflation & Spending")
 
-This section evaluates how **external economic factors (inflation)** influence your financial decisions.
-""")
+inflation = st.selectbox("Inflation has significantly affected my finances.", likert)
+inflation_loan = st.selectbox("I borrow more due to rising expenses.", likert)
+lifestyle = st.selectbox("I borrow to maintain my lifestyle.", likert)
 
-inflation = st.selectbox(
-"Rising prices (inflation) have significantly affected my financial situation.",
-likert
-)
-
-inflation_loan = st.selectbox(
-"I tend to borrow more when my expenses increase due to inflation.",
-likert
-)
-
-lifestyle = st.selectbox(
-"I borrow money to maintain my current lifestyle.",
-likert
-)
-
-# -------------------------
-# ACTION BUTTON
-# -------------------------
+# ---------- RUN ----------
 st.markdown("---")
 
-if st.button("🔍 Analyze My Financial Profile"):
-    # (DO NOT CHANGE ANYTHING BELOW - YOUR ORIGINAL LOGIC CONTINUES)
+if st.button("Analyze Financial Profile"):
+
+    # ⚠️ DO NOT MODIFY (YOUR ORIGINAL LOGIC)
     u={"income":income,"emi":emi,"fomo":fomo,"social_influence":social,"optimism":optimism,
        "tracking":tracking,"interest":interest,"emi_awareness":emi_awareness,
        "debt_knowledge":debt,"inflation_impact":inflation,"inflation_loan":inflation_loan,
@@ -378,19 +338,118 @@ if st.button("🔍 Analyze My Financial Profile"):
     insights = generate_behavioral_insights(f)
     recs = generate_recommendations(f, fhs, final)
 
-    st.header("📊 Financial Report")
+    # ---------- RESULTS ----------
+    st.markdown("## Financial Summary")
 
-    st.write(f"Score: {fhs} ({fhs_cat})")
-    st.write(f"Final Risk: {final}")
-    st.write(f"Behavioral Stress: {fvpm}")
+    col1, col2 = st.columns(2)
 
-    st.subheader("🧠 Insights")
+    with col1:
+        st.markdown(f"""
+        <div class="section">
+        <div class="title">Financial Health Score</div>
+        <div class="subtitle">{fhs} ({fhs_cat})</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown(f"""
+        <div class="section">
+        <div class="title">Overall Risk Level</div>
+        <div class="subtitle">{final}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="section">
+    <div class="title">Behavioral Stress (Regression Model)</div>
+    <div class="subtitle">{fvpm}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ---------- RISK METER ----------
+    st.markdown("### Financial Health Visualization")
+
+    fig, ax = plt.subplots()
+    ax.barh(["Score"], [fhs])
+    ax.set_xlim(0, 100)
+    ax.set_title("Financial Health Score (0–100)")
+    st.pyplot(fig)
+
+    # ---------- PERSONA ----------
+    st.markdown("### Financial Behavior Profile")
+
+    persona = ""
+    if fhs >= 75:
+        persona = "Disciplined Planner"
+    elif fhs >= 60:
+        persona = "Stable but Reactive"
+    elif fhs >= 40:
+        persona = "Vulnerable Decision Maker"
+    else:
+        persona = "High Risk Financial Behavior"
+
+    if f['fomo'] >= 4:
+        persona += " with Impulsive Tendencies"
+    if f['social_influence'] >= 4:
+        persona += " influenced by External Factors"
+    if f['optimism_bias'] >= 4:
+        persona += " relying on Future Expectations"
+
+    st.markdown(f"""
+    <div class="section">
+    <b>{persona}</b><br>
+    <span class="subtitle">
+    This profile summarizes your financial behavior pattern.
+    </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ---------- INSIGHTS ----------
+    st.markdown("### Behavioral Insights")
+
     for i in insights:
-        st.write(i["insight"])
-        st.write("→", i["interpretation"])
+        st.markdown(f"""
+        <div class="section">
+        <b>{i['insight']}</b><br>
+        <span class="subtitle">{i['interpretation']}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
-    st.subheader("📌 Recommendations")
+    # ---------- RECOMMENDATIONS ----------
+    st.markdown("### Recommended Actions")
+
     for r in recs:
-        st.write(r["action"])
-        st.write("Why:", r["why"])
-        st.write("Impact:", r["impact"])
+        st.markdown(f"""
+        <div class="section">
+        <b>{r['action']}</b><br>
+        <span class="subtitle"><b>Why:</b> {r['why']}</span><br>
+        <span class="subtitle"><b>Impact:</b> {r['impact']}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ---------- LEARNING ----------
+    st.markdown("### Learning & Improvement Resources")
+
+    links = []
+
+    if f['emi_percentage'] >= 3:
+        links.append(("Debt Management", "https://www.rbi.org.in/financialeducation"))
+
+    if f['fli'] <= 2.5:
+        links.append(("Financial Basics", "https://www.investopedia.com/financial-term-dictionary-4769738"))
+
+    if f['fomo'] >= 4:
+        links.append(("Behavioral Finance", "https://www.investopedia.com/terms/b/behavioralfinance.asp"))
+
+    if f['inflation_index'] >= 4:
+        links.append(("Understanding Inflation", "https://www.investopedia.com/terms/i/inflation.asp"))
+
+    for title, link in links:
+        st.markdown(f"- [{title}]({link})")
+
+    st.markdown("""
+Additional trusted resources:
+- https://www.rbi.org.in  
+- https://www.sebi.gov.in  
+- https://www.investopedia.com  
+""")
