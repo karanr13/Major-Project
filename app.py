@@ -222,37 +222,146 @@ def generate_recommendations(features, fhs_score, risk_category):
 # UI
 # =========================
 
+# =========================
+# UI (IMPROVED ONLY - NO LOGIC CHANGE)
+# =========================
+
 likert = list(likert_map.keys())
 
-st.header("📊 Financial Profile")
+# -------------------------
+# INTRO
+# -------------------------
+st.markdown("""
+## 📊 Financial Intelligence Assessment
 
-loan = st.selectbox("Do you have a loan?", ["Yes","No"])
-income = st.selectbox("Monthly Income", list(income_map.keys()))
+This system evaluates your **financial health, behavioral tendencies, and risk exposure** using a combination of:
+- Financial scoring
+- Behavioral analysis
+- Machine learning
+- Regression-based risk modeling
+
+👉 Please answer honestly based on your typical behavior.
+""")
+
+# -------------------------
+# SECTION 1
+# -------------------------
+st.markdown("""
+### 🏦 Financial Background
+
+This section helps us understand your **income capacity and financial obligations**, which directly impact your risk level.
+""")
+
+loan = st.selectbox(
+"Do you currently have an active loan obligation?",
+["Yes","No"],
+help="Loans increase fixed financial commitments and impact flexibility."
+)
+
+income = st.selectbox(
+"Which of the following best describes your monthly income?",
+list(income_map.keys()),
+help="Income determines your financial capacity and stability."
+)
 
 if loan == "Yes":
-    emi = st.selectbox("EMI %", list(emi_map.keys()))
+    emi = st.selectbox(
+    "What proportion of your monthly income goes towards EMI payments?",
+    list(emi_map.keys()),
+    help="Higher EMI reduces your ability to save and increases financial stress."
+    )
 else:
     emi = "Less than 20%"
 
-fomo = st.selectbox("FOMO", likert)
-social = st.selectbox("Social Influence", likert)
-optimism = st.selectbox("Future Income Expectation", likert)
+# -------------------------
+# SECTION 2
+# -------------------------
+st.markdown("""
+### 🧠 Financial Behavior
 
-tracking = st.selectbox("Track finances", likert)
-interest = st.selectbox("Understand interest", likert)
-emi_awareness = st.selectbox("Understand EMI", likert)
-debt = st.selectbox("Understand debt", likert)
+This section evaluates **behavioral biases** that influence financial decisions.
+Please indicate how much you agree with the following statements:
+""")
 
-inflation = st.selectbox("Inflation impact", likert)
-inflation_loan = st.selectbox("Borrow due to inflation", likert)
-lifestyle = st.selectbox("Lifestyle borrowing", likert)
+fomo = st.selectbox(
+"I feel pressure to act on financial opportunities so that I do not miss out.",
+likert,
+help="Measures fear of missing out (FOMO), which can lead to impulsive decisions."
+)
 
-# =========================
-# RUN
-# =========================
+social = st.selectbox(
+"My financial decisions are influenced by what others around me are doing.",
+likert,
+help="Captures social influence on financial behavior."
+)
 
-if st.button("Analyze"):
+optimism = st.selectbox(
+"I expect my income to increase significantly in the future.",
+likert,
+help="Measures optimism bias and reliance on future income."
+)
 
+# -------------------------
+# SECTION 3
+# -------------------------
+st.markdown("""
+### 📘 Financial Awareness
+
+This section assesses your **understanding of key financial concepts**, which is critical for sound decision-making.
+""")
+
+tracking = st.selectbox(
+"I actively track my expenses and financial activities.",
+likert,
+help="Tracking improves financial control and awareness."
+)
+
+interest = st.selectbox(
+"I understand how interest rates impact loans and savings.",
+likert
+)
+
+emi_awareness = st.selectbox(
+"I understand how EMI commitments affect my finances over time.",
+likert
+)
+
+debt = st.selectbox(
+"I have a clear understanding of my debt obligations.",
+likert
+)
+
+# -------------------------
+# SECTION 4
+# -------------------------
+st.markdown("""
+### 📈 Inflation & Spending Behavior
+
+This section evaluates how **external economic factors (inflation)** influence your financial decisions.
+""")
+
+inflation = st.selectbox(
+"Rising prices (inflation) have significantly affected my financial situation.",
+likert
+)
+
+inflation_loan = st.selectbox(
+"I tend to borrow more when my expenses increase due to inflation.",
+likert
+)
+
+lifestyle = st.selectbox(
+"I borrow money to maintain my current lifestyle.",
+likert
+)
+
+# -------------------------
+# ACTION BUTTON
+# -------------------------
+st.markdown("---")
+
+if st.button("🔍 Analyze My Financial Profile"):
+    # (DO NOT CHANGE ANYTHING BELOW - YOUR ORIGINAL LOGIC CONTINUES)
     u={"income":income,"emi":emi,"fomo":fomo,"social_influence":social,"optimism":optimism,
        "tracking":tracking,"interest":interest,"emi_awareness":emi_awareness,
        "debt_knowledge":debt,"inflation_impact":inflation,"inflation_loan":inflation_loan,
