@@ -2,141 +2,73 @@ import streamlit as st
 import pickle
 import pandas as pd
 
-# =========================
-# LOAD MODEL (YOUR RF MODEL)
-# =========================
+# -------------------------
+# LOAD MODEL
+# -------------------------
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 
 st.set_page_config(page_title="Financial Intelligence System", layout="centered")
 
 st.title("💰 Financial Intelligence System")
-st.caption("Evaluate financial health, behavioral risk, and decision patterns")
+st.caption("A structured system to evaluate financial health, behavioral patterns, and risk.")
 
 # =========================
-# ===== YOUR ORIGINAL CODE (UNCHANGED) =====
+# MAPPINGS
 # =========================
 
-income_map = {
-    "Below ₹20k": 1,
-    "₹20k–40k": 2,
-    "₹40k–60k": 3,
-    "₹60k–1L": 4,
-    "Above ₹1L": 5
-}
+income_map = {"Below ₹20k":1,"₹20k–40k":2,"₹40k–60k":3,"₹60k–1L":4,"Above ₹1L":5}
+emi_map = {"Less than 20%":1,"20%–30%":2,"30%–40%":3,"Above 40%":4}
+likert_map = {"Strongly Disagree":1,"Disagree":2,"Neutral":3,"Agree":4,"Strongly Agree":5}
+binary_map = {"No":0,"Yes":1}
 
-emi_map = {
-    "Less than 20%": 1,
-    "20%–30%": 2,
-    "30%–40%": 3,
-    "Above 40%": 4
-}
-
-likert_map = {
-    "Strongly Disagree": 1,
-    "Disagree": 2,
-    "Neutral": 3,
-    "Agree": 4,
-    "Strongly Agree": 5
-}
-
-binary_map = {"No": 0, "Yes": 1}
-
-def safe_map(value, mapping, field_name):
-    value = value.strip()
-    if value not in mapping:
-        raise ValueError(f"Invalid input for {field_name}: {value}")
-    return mapping[value]
+# =========================
+# CORE PIPELINE (UNCHANGED)
+# =========================
 
 def preprocess_input(user_input):
-    processed = {}
-
-    processed['monthly_income'] = safe_map(user_input['income'], income_map, "income")
-    processed['emi_percentage'] = safe_map(user_input['emi'], emi_map, "emi")
-
-    processed['fomo'] = safe_map(user_input['fomo'], likert_map, "fomo")
-    processed['social_influence'] = safe_map(user_input['social_influence'], likert_map, "social")
-    processed['optimism_bias'] = safe_map(user_input['optimism'], likert_map, "optimism")
-
-    processed['financial_tracking'] = safe_map(user_input['tracking'], likert_map, "tracking")
-    processed['interest_understanding'] = safe_map(user_input['interest'], likert_map, "interest")
-    processed['emi_awareness'] = safe_map(user_input['emi_awareness'], likert_map, "emi awareness")
-    processed['debt_knowledge'] = safe_map(user_input['debt_knowledge'], likert_map, "debt")
-
-    processed['inflation_impact'] = safe_map(user_input['inflation_impact'], likert_map, "inflation")
-    processed['inflation_loan_dependency'] = safe_map(user_input['inflation_loan'], likert_map, "inflation loan")
-    processed['inflation_lifestyle_borrowing'] = safe_map(user_input['lifestyle_borrowing'], likert_map, "lifestyle")
-
-    processed['has_loan'] = safe_map(user_input['has_loan'], binary_map, "loan")
-
-    return processed
-
+    return {
+        'monthly_income': income_map[user_input['income']],
+        'emi_percentage': emi_map[user_input['emi']],
+        'fomo': likert_map[user_input['fomo']],
+        'social_influence': likert_map[user_input['social_influence']],
+        'optimism_bias': likert_map[user_input['optimism']],
+        'financial_tracking': likert_map[user_input['tracking']],
+        'interest_understanding': likert_map[user_input['interest']],
+        'emi_awareness': likert_map[user_input['emi_awareness']],
+        'debt_knowledge': likert_map[user_input['debt_knowledge']],
+        'inflation_impact': likert_map[user_input['inflation_impact']],
+        'inflation_loan_dependency': likert_map[user_input['inflation_loan']],
+        'inflation_lifestyle_borrowing': likert_map[user_input['lifestyle_borrowing']],
+        'has_loan': binary_map[user_input['has_loan']]
+    }
 
 def create_features(features):
-    features['fli'] = (
-        features['financial_tracking'] +
-        features['interest_understanding'] +
-        features['emi_awareness'] +
-        features['debt_knowledge']
-    ) / 4
-
-    features['inflation_index'] = (
-        features['inflation_impact'] +
-        features['inflation_loan_dependency'] +
-        features['inflation_lifestyle_borrowing']
-    ) / 3
-
-    features['behavior_score'] = (
-        features['fomo'] +
-        features['social_influence'] +
-        features['optimism_bias']
-    ) / 3
-
-    features['stress_proxy'] = (
-        features['emi_percentage'] +
-        features['inflation_index']
-    ) / 2
-
+    features['fli'] = (features['financial_tracking'] + features['interest_understanding'] + features['emi_awareness'] + features['debt_knowledge']) / 4
+    features['inflation_index'] = (features['inflation_impact'] + features['inflation_loan_dependency'] + features['inflation_lifestyle_borrowing']) / 3
+    features['behavior_score'] = (features['fomo'] + features['social_influence'] + features['optimism_bias']) / 3
+    features['stress_proxy'] = (features['emi_percentage'] + features['inflation_index']) / 2
     return features
 
+def normalize(x): return (x-1)/4
 
-def normalize(value):
-    return (value - 1) / 4
-
-
-def calculate_fhs(features):
-
-    emi_score = 1 - normalize(features['emi_percentage'])
-    stress_score = 1 - normalize(features['stress_proxy'])
-    inflation_score = 1 - normalize(features['inflation_index'])
-    behavior_score = 1 - normalize(features['behavior_score'])
-    fli_score = normalize(features['fli'])
-
-    fhs = (
-        0.25 * emi_score +
-        0.20 * stress_score +
-        0.20 * inflation_score +
-        0.20 * behavior_score +
-        0.15 * fli_score
-    ) * 100
-
-    return round(fhs, 2)
-
+def calculate_fhs(f):
+    return round((
+        0.25*(1-normalize(f['emi_percentage']))+
+        0.20*(1-normalize(f['stress_proxy']))+
+        0.20*(1-normalize(f['inflation_index']))+
+        0.20*(1-normalize(f['behavior_score']))+
+        0.15*(normalize(f['fli']))
+    )*100,2)
 
 def classify_risk(fhs):
-    if fhs >= 80:
-        return "Financially Healthy"
-    elif fhs >= 60:
-        return "Stable"
-    elif fhs >= 40:
-        return "At Risk"
-    else:
-        return "Financially Vulnerable"
-
+    if fhs>=80:return "Financially Healthy"
+    elif fhs>=60:return "Stable"
+    elif fhs>=40:return "At Risk"
+    else:return "Financially Vulnerable"
 
 def predict_ml_risk(features, model):
-
-    input_df = pd.DataFrame([{
+    df = pd.DataFrame([{
         'emi_percentage': features['emi_percentage'],
         'fomo': features['fomo'],
         'social_influence': features['social_influence'],
@@ -144,20 +76,10 @@ def predict_ml_risk(features, model):
         'fli': features['fli'],
         'inflation_index': features['inflation_index']
     }])
-
-    prediction = int(model.predict(input_df)[0])
-
-    label_map = {
-        1: "Financially Vulnerable",
-        2: "Somewhat Strained",
-        3: "Financially Stable"
-    }
-
-    return label_map[prediction]
-
+    return {1:"Financially Vulnerable",2:"Somewhat Strained",3:"Financially Stable"}[int(model.predict(df)[0])]
 
 # =========================
-# FVPM (UNCHANGED)
+# FVPM
 # =========================
 
 model_weights = {
@@ -172,62 +94,157 @@ def calculate_risk_score(features):
         model_weights["emi_percentage"] * features["emi_percentage"] +
         model_weights["social_influence"] * features["social_influence"] +
         model_weights["optimism_bias"] * features["optimism_bias"] +
-        model_weights["fomo"] * features["fomo"],
-        2
-    )
+        model_weights["fomo"] * features["fomo"], 2)
 
 def classify_model_risk(score):
-    if score <= -3:
-        return "Low Stress"
-    elif score <= 0:
-        return "Moderate Stress"
-    else:
-        return "High Stress"
-
+    if score <= -3:return "Low Stress"
+    elif score <= 0:return "Moderate Stress"
+    else:return "High Stress"
 
 def final_risk_label(fhs_category, ml_risk):
-    if "Vulnerable" in ml_risk or "At Risk" in fhs_category:
-        return "At Risk"
-    elif "Stable" in ml_risk and "Stable" in fhs_category:
-        return "Stable"
-    else:
-        return "Moderate"
-
+    if "Vulnerable" in ml_risk or "At Risk" in fhs_category:return "At Risk"
+    elif "Stable" in ml_risk and "Stable" in fhs_category:return "Stable"
+    else:return "Moderate"
 
 # =========================
-# UI (ONLY CHANGE)
+# YOUR EXACT INSIGHTS FUNCTION
+# =========================
+
+def generate_behavioral_insights(features):
+
+    insights = []
+
+    if features['fomo'] >= 4:
+        insights.append({
+            "insight": "You show a tendency to fear missing out on opportunities.",
+            "interpretation": "This may lead to impulsive financial decisions or unnecessary borrowing."
+        })
+
+    if features['social_influence'] >= 4:
+        insights.append({
+            "insight": "Your financial decisions are influenced by people around you.",
+            "interpretation": "This may cause you to take financial actions that may not align with your personal capacity."
+        })
+
+    if features['optimism_bias'] >= 4:
+        insights.append({
+            "insight": "You rely on expectations of future income growth.",
+            "interpretation": "This can lead to over-commitment and increased financial risk if expectations are not met."
+        })
+
+    if features['emi_percentage'] >= 3:
+        insights.append({
+            "insight": "Your EMI burden is relatively high.",
+            "interpretation": "This reduces your financial flexibility and limits your ability to save."
+        })
+
+    if features['fli'] <= 2.5:
+        insights.append({
+            "insight": "Your financial awareness appears to be limited.",
+            "interpretation": "Improving financial knowledge can help you make better long-term decisions."
+        })
+
+    if features['inflation_index'] >= 4:
+        insights.append({
+            "insight": "You are experiencing strong financial pressure due to inflation.",
+            "interpretation": "This may increase reliance on borrowing and affect financial stability."
+        })
+
+    return insights
+
+# =========================
+# YOUR EXACT RECOMMENDATION FUNCTION
+# =========================
+
+def generate_recommendations(features, fhs_score, risk_category):
+
+    recommendations = []
+
+    if features['emi_percentage'] >= 3:
+        recommendations.append({
+            "action": "Reduce your EMI burden below 30% of your income.",
+            "why": "Your current EMI level is limiting your ability to save and increasing financial pressure.",
+            "impact": "Lower EMI will improve your financial flexibility and reduce long-term stress."
+        })
+
+    if features['fomo'] >= 4:
+        recommendations.append({
+            "action": "Avoid making financial decisions driven by fear of missing out.",
+            "why": "Your responses indicate a tendency toward impulsive or opportunity-driven spending.",
+            "impact": "This will help you avoid unnecessary financial commitments and improve stability."
+        })
+
+    if features['optimism_bias'] >= 4:
+        recommendations.append({
+            "action": "Avoid relying heavily on expected future income while making financial commitments.",
+            "why": "You show a tendency to assume future income growth, which may not always materialize.",
+            "impact": "This reduces the risk of over-commitment and unexpected financial stress."
+        })
+
+    if features['social_influence'] >= 4:
+        recommendations.append({
+            "action": "Make financial decisions based on your own financial capacity rather than peer behavior.",
+            "why": "Your decisions appear influenced by external social factors.",
+            "impact": "This ensures your financial decisions remain sustainable and aligned with your situation."
+        })
+
+    if features['fli'] <= 2.5:
+        recommendations.append({
+            "action": "Improve your financial knowledge regarding loans, EMIs, and savings.",
+            "why": "Your responses suggest limited awareness of financial concepts.",
+            "impact": "Better understanding will lead to more informed and effective financial decisions."
+        })
+
+    if features['inflation_index'] >= 4:
+        recommendations.append({
+            "action": "Focus on controlling discretionary spending during periods of high inflation.",
+            "why": "You are experiencing strong financial pressure due to rising costs.",
+            "impact": "This will help maintain financial stability and reduce reliance on borrowing."
+        })
+
+    if fhs_score < 40:
+        recommendations.append({
+            "action": "Prioritize reducing financial risk and building an emergency fund.",
+            "why": "Your overall financial health score indicates high vulnerability.",
+            "impact": "This will improve your resilience against financial shocks."
+        })
+
+    elif fhs_score >= 60:
+        recommendations.append({
+            "action": "Consider increasing investments for long-term financial growth.",
+            "why": "Your financial profile shows relative stability.",
+            "impact": "This will help build wealth and improve financial security."
+        })
+
+    return recommendations
+
+# =========================
+# UI
 # =========================
 
 likert = list(likert_map.keys())
 
-st.header("Basic Information")
+st.header("📊 Financial Profile")
 
-loan = st.selectbox("Do you have an active loan?", ["Yes", "No"])
-
+loan = st.selectbox("Do you have a loan?", ["Yes","No"])
 income = st.selectbox("Monthly Income", list(income_map.keys()))
 
 if loan == "Yes":
-    emi = st.selectbox("EMI % of income", list(emi_map.keys()))
+    emi = st.selectbox("EMI %", list(emi_map.keys()))
 else:
     emi = "Less than 20%"
 
-st.header("Behavior")
+fomo = st.selectbox("FOMO", likert)
+social = st.selectbox("Social Influence", likert)
+optimism = st.selectbox("Future Income Expectation", likert)
 
-fomo = st.selectbox("Fear of missing financial opportunities", likert)
-social = st.selectbox("Influence of others on decisions", likert)
-optimism = st.selectbox("Expectation of future income growth", likert)
-
-st.header("Awareness")
-
-tracking = st.selectbox("Tracking finances", likert)
-interest = st.selectbox("Understanding interest", likert)
-emi_awareness = st.selectbox("Understanding EMI", likert)
-debt = st.selectbox("Understanding debt", likert)
-
-st.header("Inflation")
+tracking = st.selectbox("Track finances", likert)
+interest = st.selectbox("Understand interest", likert)
+emi_awareness = st.selectbox("Understand EMI", likert)
+debt = st.selectbox("Understand debt", likert)
 
 inflation = st.selectbox("Inflation impact", likert)
-inflation_loan = st.selectbox("Borrowing due to inflation", likert)
+inflation_loan = st.selectbox("Borrow due to inflation", likert)
 lifestyle = st.selectbox("Lifestyle borrowing", likert)
 
 # =========================
@@ -236,37 +253,35 @@ lifestyle = st.selectbox("Lifestyle borrowing", likert)
 
 if st.button("Analyze"):
 
-    user_input = {
-        "income": income,
-        "emi": emi,
-        "fomo": fomo,
-        "social_influence": social,
-        "optimism": optimism,
-        "tracking": tracking,
-        "interest": interest,
-        "emi_awareness": emi_awareness,
-        "debt_knowledge": debt,
-        "inflation_impact": inflation,
-        "inflation_loan": inflation_loan,
-        "lifestyle_borrowing": lifestyle,
-        "has_loan": loan
-    }
+    u={"income":income,"emi":emi,"fomo":fomo,"social_influence":social,"optimism":optimism,
+       "tracking":tracking,"interest":interest,"emi_awareness":emi_awareness,
+       "debt_knowledge":debt,"inflation_impact":inflation,"inflation_loan":inflation_loan,
+       "lifestyle_borrowing":lifestyle,"has_loan":loan}
 
-    processed = preprocess_input(user_input)
-    features = create_features(processed)
+    f=create_features(preprocess_input(u))
 
-    fhs = calculate_fhs(features)
-    fhs_cat = classify_risk(fhs)
+    fhs=calculate_fhs(f)
+    fhs_cat=classify_risk(fhs)
+    ml=predict_ml_risk(f,model)
+    fvpm=classify_model_risk(calculate_risk_score(f))
+    final=final_risk_label(fhs_cat,ml)
 
-    ml_risk = predict_ml_risk(features, model)
+    insights = generate_behavioral_insights(f)
+    recs = generate_recommendations(f, fhs, final)
 
-    fvpm_score = calculate_risk_score(features)
-    fvpm_risk = classify_model_risk(fvpm_score)
+    st.header("📊 Financial Report")
 
-    final = final_risk_label(fhs_cat, ml_risk)
-
-    st.header("Results")
-
-    st.write(f"Financial Health Score: {fhs} ({fhs_cat})")
+    st.write(f"Score: {fhs} ({fhs_cat})")
     st.write(f"Final Risk: {final}")
-    st.write(f"Regression Risk (FVPM): {fvpm_risk}")
+    st.write(f"Behavioral Stress: {fvpm}")
+
+    st.subheader("🧠 Insights")
+    for i in insights:
+        st.write(i["insight"])
+        st.write("→", i["interpretation"])
+
+    st.subheader("📌 Recommendations")
+    for r in recs:
+        st.write(r["action"])
+        st.write("Why:", r["why"])
+        st.write("Impact:", r["impact"])
